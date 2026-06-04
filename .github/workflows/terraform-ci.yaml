@@ -1,0 +1,44 @@
+name: terraform-ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: Validate root module
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: Validate examples
+        run: |
+          set -e
+          for d in examples/*/; do
+            echo "::group::validating $d"
+            (cd "$d" && terraform init -backend=false && terraform validate)
+            echo "::endgroup::"
+          done
+
+  tflint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: terraform-linters/setup-tflint@v4
+      - run: tflint --init
+      - run: tflint --recursive

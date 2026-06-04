@@ -1,0 +1,12 @@
+databricks_host         = "https://adb-1234567890123456.7.azuredatabricks.net"
+cluster_id              = "1234-567890-abcde123"
+run_as_sp_application_id = "11111111-2222-3333-4444-555555555555"
+
+schemas = [
+  { catalog = "research_catalog", schema = "research_1" },
+  { catalog = "production_catalog", schema = "chatbot" },
+]
+
+# HiddenLayer SaaS credentials (omit for an Enterprise self-hosted scanner).
+hl_client_id     = "abcdefgh-abcd-abcd-123-abcdef12345"
+hl_client_secret = "abcd1234-abcd123456789"

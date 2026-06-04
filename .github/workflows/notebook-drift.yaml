@@ -1,0 +1,53 @@
+name: notebook-drift
+
+# Fails if the vendored notebooks/ have drifted from the upstream CLI repo at
+# the version pinned in notebooks/.upstream-version. This is the guard that
+# keeps the vendored copies honest.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 12 * * 1" # weekly, Monday 12:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout module
+        uses: actions/checkout@v4
+        with:
+          path: module
+
+      - name: Read pinned upstream version
+        id: pin
+        run: echo "ref=$(cat module/notebooks/.upstream-version)" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout upstream notebooks
+        uses: actions/checkout@v4
+        with:
+          repository: hiddenlayerai/hiddenlayer-databricks-model-scanner
+          ref: ${{ steps.pin.outputs.ref }}
+          path: upstream
+          # Only needed if the upstream repo is private:
+          # token: ${{ secrets.UPSTREAM_REPO_TOKEN }}
+
+      - name: Diff vendored notebooks against upstream
+        run: |
+          set -euo pipefail
+          status=0
+          for f in hl_common.py hl_monitor_models.py hl_scan_model.py hl_test.py; do
+            if ! diff -u "upstream/internal/dbx/notebooks/$f" "module/notebooks/$f"; then
+              echo "::error file=notebooks/$f::Vendored notebook differs from upstream ${{ steps.pin.outputs.ref }}"
+              status=1
+            fi
+          done
+          if [ "$status" -eq 0 ]; then
+            echo "All vendored notebooks match upstream ${{ steps.pin.outputs.ref }}"
+          fi
+          exit "$status"
