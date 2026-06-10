@@ -1,7 +1,7 @@
 # terraform-databricks-hiddenlayer-autoscan
 
-Terraform module that deploys the [HiddenLayer](https://hiddenlayer.ai) Databricks
-model autoscan: it uploads the scanner notebooks, stores HiddenLayer credentials,
+Terraform module that deploys the [HiddenLayer Databricks Model Scanner](https://github.com/hiddenlayerai/hiddenlayer-databricks-model-scanner):
+it uploads the scanner notebooks, stores HiddenLayer credentials,
 and creates the **scheduled job** that polls Unity Catalog for new model versions
 and submits them to the HiddenLayer Model Scanner.
 
@@ -11,14 +11,16 @@ workspaces and accounts.
 
 ## What it creates
 
-| Resource | Purpose |
-| --- | --- |
-| `databricks_directory` | Versioned workspace folder `/<base>/<notebook_version>` |
-| `databricks_notebook` x3 | `hl_monitor_models`, `hl_scan_model`, `hl_test` |
-| `databricks_workspace_file` | `hl_common.py` (plain module, imported by the notebooks) |
-| `databricks_secret_scope` / `databricks_secret` | HiddenLayer `client_id:client_secret` per `catalog.schema` (SaaS only) |
-| `databricks_job` | The cron-scheduled monitor job (the centerpiece) |
+
+| Resource                                                                | Purpose                                                                      |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `databricks_directory`                                                  | Versioned workspace folder `/<base>/<notebook_version>`                      |
+| `databricks_notebook` x3                                                | `hl_monitor_models`, `hl_scan_model`, `hl_test`                              |
+| `databricks_workspace_file`                                             | `hl_common.py` (plain module, imported by the notebooks)                     |
+| `databricks_secret_scope` / `databricks_secret`                         | HiddenLayer `client_id:client_secret` per `catalog.schema` (SaaS only)       |
+| `databricks_job`                                                        | The cron-scheduled monitor job (the centerpiece)                             |
 | `databricks_secret_acl` / `databricks_permissions` / `databricks_grant` | Permissions the run-as service principal needs to run and to spawn scan jobs |
+
 
 The per-model **scan jobs are created at runtime** by the monitor notebook and are
 intentionally *not* managed by Terraform.
@@ -51,7 +53,7 @@ module "hl_autoscan" {
 }
 ```
 
-See [`examples/`](./examples) for single- and multi-workspace setups.
+See `[examples/](./examples)` for single- and multi-workspace setups.
 
 ## How the job gets scheduled
 
@@ -75,7 +77,7 @@ SP:
 
 - `READ` on each HiddenLayer secret scope,
 - cluster access (`cluster_permission_level`, default `CAN_RESTART`) and
-  `CAN_MANAGE_RUN` on the job,
+`CAN_MANAGE_RUN` on the job,
 - Unity Catalog `USE_CATALOG`, `USE_SCHEMA`, `EXECUTE`, `APPLY_TAG`.
 
 The SP must also be able to create jobs in the workspace, because the monitor
@@ -86,23 +88,29 @@ Terraform principal cannot manage UC grants and handle those out-of-band.
 
 The core module is workspace-scoped and cloud-agnostic. Pass an aliased provider
 per workspace via the `providers` meta-argument (see the multi-workspace example).
-Creating the service principal itself (the cloud-specific part) will live in the
-optional `modules/identity-*` submodules; today you supply an existing SP.
+
+The optional `[modules/identity-azure](./modules/identity-azure)` submodule handles
+the cloud-specific part for Azure: given a pre-existing Entra ID-backed service
+principal it looks the SP up at the Databricks account level and assigns it to one
+or more workspaces via a single module call, then outputs the `application_id` for
+the root module's `run_as_service_principal_application_id`. Use it when you want
+Terraform to own the workspace-assignment step; skip it and pass `application_id`
+directly if that assignment is managed elsewhere.
 
 ## Notebook source of truth
 
-The notebooks in [`notebooks/`](./notebooks) are vendored from
+The notebooks in `[notebooks/](./notebooks)` are vendored from
 `hiddenlayerai/hiddenlayer-databricks-model-scanner` and pinned in
 `notebooks/.upstream-version`. The `notebook-drift` workflow fails if they drift,
 and the upstream repo opens a sync PR here on each release.
 
 ## Inputs
 
-See [`variables.tf`](./variables.tf) for the full list. Required: `cluster_id`,
+See `[variables.tf](./variables.tf)` for the full list. Required: `cluster_id`,
 `schemas`.
 
 ## Limitations
 
-- HiddenLayer credentials are stored in Terraform state via `databricks_secret`;
-  protect your state backend (or use an Azure Key Vault-backed scope variant).
-- Runtime-created scan jobs are not represented in Terraform state.
+- HiddenLayer credentials are stored in Terraform state via `databricks_secret`;  
+protect your state backend (or use an Azure Key Vault-backed scope variant).
+
