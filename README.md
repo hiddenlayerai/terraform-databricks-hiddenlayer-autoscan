@@ -39,11 +39,13 @@ module "hl_autoscan" {
 
   run_as_service_principal_application_id = "11111111-2222-3333-4444-555555555555"
 
-  hiddenlayer = {
-    api_url       = "https://api.us.hiddenlayer.ai"
-    client_id     = var.hl_client_id
-    client_secret = var.hl_client_secret
-  }
+  # SaaS credentials are separate sensitive variables so they don't taint
+  # the non-sensitive URL config used for for_each key derivation.
+  hiddenlayer_client_id     = var.hl_client_id
+  hiddenlayer_client_secret = var.hl_client_secret
+
+  # Optional: override endpoint URLs (defaults target the US SaaS region).
+  # hiddenlayer = { api_url = "https://api.eu.hiddenlayer.ai", ... }
 
   quartz_cron = "0 0 */12 * * ?"
 }
@@ -62,8 +64,8 @@ on the cron with no further action.
 
 If `hiddenlayer.api_url` does **not** end in `.hiddenlayer.ai`, the module treats
 it as an Enterprise (self-hosted) scanner: no secret scope/secret is created and
-credentials are optional. This mirrors `Config.UsesEnterpriseModelScanner()` in
-the CLI.
+`hiddenlayer_client_id`/`hiddenlayer_client_secret` are not required. This mirrors
+`Config.UsesEnterpriseModelScanner()` in the CLI.
 
 ## Run-as permissions (important)
 

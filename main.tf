@@ -79,12 +79,12 @@ resource "databricks_secret" "hl" {
 
   scope        = databricks_secret_scope.hl[each.key].name
   key          = var.hiddenlayer.api_key_name
-  string_value = "${var.hiddenlayer.client_id}:${var.hiddenlayer.client_secret}"
+  string_value = "${var.hiddenlayer_client_id}:${var.hiddenlayer_client_secret}"
 
   lifecycle {
     precondition {
-      condition     = var.hiddenlayer.client_id != null && var.hiddenlayer.client_secret != null
-      error_message = "hiddenlayer.client_id and hiddenlayer.client_secret are required when using the SaaS scanner (api_url ending in .hiddenlayer.ai)."
+      condition     = var.hiddenlayer_client_id != null && var.hiddenlayer_client_secret != null
+      error_message = "hiddenlayer_client_id and hiddenlayer_client_secret are required when using the SaaS scanner (api_url ending in .hiddenlayer.ai)."
     }
   }
 }

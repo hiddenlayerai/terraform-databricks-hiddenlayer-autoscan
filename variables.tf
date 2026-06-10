@@ -26,27 +26,38 @@ variable "schemas" {
 
 variable "hiddenlayer" {
   description = <<-EOT
-    HiddenLayer Model Scanner configuration.
+    HiddenLayer Model Scanner endpoint configuration (non-sensitive).
 
-    For the SaaS scanner (api_url ending in `.hiddenlayer.ai`) `client_id`,
-    `client_secret` and `api_key_name` are required: the module stores
-    `client_id:client_secret` in a Databricks-backed secret scope per schema.
+    For the SaaS scanner (api_url ending in `.hiddenlayer.ai`) supply credentials
+    via `hiddenlayer_client_id` and `hiddenlayer_client_secret`; the module stores
+    them in a Databricks-backed secret scope per schema.
 
-    For an Enterprise (self-hosted) scanner, set `api_url` to your scanner URL
-    and leave the credentials null - no secret scope is created.
+    For an Enterprise (self-hosted) scanner, set `api_url` to your scanner URL.
+    No secret scope is created and credentials are not required.
   EOT
 
   type = object({
-    api_url       = optional(string, "https://api.us.hiddenlayer.ai")
-    auth_url      = optional(string, "https://auth.hiddenlayer.ai")
-    console_url   = optional(string, "https://console.us.hiddenlayer.ai")
-    api_key_name  = optional(string, "hiddenlayer-key")
-    client_id     = optional(string)
-    client_secret = optional(string)
+    api_url      = optional(string, "https://api.us.hiddenlayer.ai")
+    auth_url     = optional(string, "https://auth.hiddenlayer.ai")
+    console_url  = optional(string, "https://console.us.hiddenlayer.ai")
+    api_key_name = optional(string, "hiddenlayer-key")
   })
 
-  default   = {}
-  sensitive = true
+  default = {}
+}
+
+variable "hiddenlayer_client_id" {
+  type        = string
+  description = "HiddenLayer API client ID. Required for the SaaS scanner (api_url ending in .hiddenlayer.ai); leave null for an Enterprise (self-hosted) scanner."
+  sensitive   = true
+  default     = null
+}
+
+variable "hiddenlayer_client_secret" {
+  type        = string
+  description = "HiddenLayer API client secret. Required for the SaaS scanner (api_url ending in .hiddenlayer.ai); leave null for an Enterprise (self-hosted) scanner."
+  sensitive   = true
+  default     = null
 }
 
 ###############################################################################

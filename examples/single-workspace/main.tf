@@ -23,12 +23,9 @@ module "hl_autoscan" {
   # Optional but recommended for an unattended scheduled job.
   run_as_service_principal_application_id = var.run_as_sp_application_id
 
-  hiddenlayer = {
-    api_url       = "https://api.us.hiddenlayer.ai"
-    client_id     = var.hl_client_id
-    client_secret = var.hl_client_secret
-    api_key_name  = "hiddenlayer-key"
-  }
+  # SaaS credentials are separate sensitive variables; URL config uses defaults.
+  hiddenlayer_client_id     = var.hl_client_id
+  hiddenlayer_client_secret = var.hl_client_secret
 
   quartz_cron = "0 0 */12 * * ?"
 }
