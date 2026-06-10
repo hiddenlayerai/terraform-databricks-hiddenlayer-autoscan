@@ -38,12 +38,11 @@ module "hl_identity" {
   source = "./modules/identity-azure"
 
   providers = {
-    databricks.account   = databricks.account
-    databricks.workspace = databricks
+    databricks.account = databricks.account
   }
 
-  application_id          = "00000000-0000-0000-0000-000000000000"
-  databricks_workspace_id = 123456789012345
+  application_id           = "00000000-0000-0000-0000-000000000000"
+  databricks_workspace_ids = [123456789012345]  # add more IDs for multi-workspace
 }
 
 module "hiddenlayer" {
@@ -62,8 +61,8 @@ module "hiddenlayer" {
 | Name | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
 | `application_id` | `string` | yes | — | Entra ID client/application ID of the pre-existing service principal. |
-| `databricks_workspace_id` | `number` | yes | — | Numeric Databricks workspace ID used to bind the SP to the workspace. |
-| `workspace_permission` | `string` | no | `"USER"` | Workspace-level role (`USER` or `ADMIN`). |
+| `databricks_workspace_ids` | `set(number)` | yes | — | One or more numeric Databricks workspace IDs to assign the SP to. |
+| `workspace_permission` | `string` | no | `"USER"` | Workspace-level role (`USER` or `ADMIN`). Applied uniformly across all workspaces. |
 | `display_name` | `string` | no | `null` | Informational display name; not used for lookup. |
 
 ## Outputs
@@ -80,4 +79,3 @@ This submodule declares two `databricks` provider aliases:
 | Alias | Used for |
 |-------|----------|
 | `databricks.account` | `data.databricks_service_principal` lookup and `databricks_mws_permission_assignment` — must target `https://accounts.azuredatabricks.net`. |
-| `databricks.workspace` | Reserved for future workspace-scoped resources; pass your workspace-scoped `databricks` provider here. |

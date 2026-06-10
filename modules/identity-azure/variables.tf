@@ -3,9 +3,14 @@ variable "application_id" {
   description = "The Entra ID client/application ID of the pre-existing service principal. This is also the Databricks SP's application_id and the value passed to the root module's run_as_service_principal_application_id."
 }
 
-variable "databricks_workspace_id" {
-  type        = number
-  description = "Numeric Databricks workspace ID. Used by databricks_mws_permission_assignment to bind the service principal to the target workspace at the account level."
+variable "databricks_workspace_ids" {
+  type        = set(number)
+  description = "Set of numeric Databricks workspace IDs to assign the service principal to. Accepts one or more workspace IDs, enabling a single module call to cover all workspaces."
+
+  validation {
+    condition     = length(var.databricks_workspace_ids) > 0
+    error_message = "At least one workspace ID must be provided."
+  }
 }
 
 variable "workspace_permission" {
