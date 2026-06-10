@@ -23,9 +23,3 @@ variable "workspace_permission" {
     error_message = "workspace_permission must be either USER or ADMIN."
   }
 }
-
-variable "display_name" {
-  type        = string
-  description = "Optional human-readable display name for the service principal. Informational only — the module looks up the SP by application_id."
-  default     = null
-}
