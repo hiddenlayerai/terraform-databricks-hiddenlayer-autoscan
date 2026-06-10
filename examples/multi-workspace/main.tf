@@ -38,11 +38,8 @@ module "hl_autoscan_a" {
   schemas    = [{ catalog = "production_catalog", schema = "models" }]
 
   run_as_service_principal_application_id = var.run_as_sp_application_id
-  hiddenlayer = {
-    api_url       = "https://api.us.hiddenlayer.ai"
-    client_id     = var.hl_client_id
-    client_secret = var.hl_client_secret
-  }
+  hiddenlayer_client_id                   = var.hl_client_id
+  hiddenlayer_client_secret               = var.hl_client_secret
 }
 
 module "hl_autoscan_b" {
@@ -53,9 +50,6 @@ module "hl_autoscan_b" {
   schemas    = [{ catalog = "research_catalog", schema = "experiments" }]
 
   run_as_service_principal_application_id = var.run_as_sp_application_id
-  hiddenlayer = {
-    api_url       = "https://api.us.hiddenlayer.ai"
-    client_id     = var.hl_client_id
-    client_secret = var.hl_client_secret
-  }
+  hiddenlayer_client_id                   = var.hl_client_id
+  hiddenlayer_client_secret               = var.hl_client_secret
 }
