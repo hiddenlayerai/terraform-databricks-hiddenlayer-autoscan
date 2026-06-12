@@ -15,11 +15,36 @@ variable "databricks_workspace_ids" {
 
 variable "workspace_permission" {
   type        = string
-  description = "Workspace-level role to grant the service principal. Must be USER or ADMIN."
+  description = "Default workspace-level role to grant the service principal when a workspace is not listed in workspace_permission_overrides. Must be USER or ADMIN."
   default     = "USER"
 
   validation {
     condition     = contains(["USER", "ADMIN"], var.workspace_permission)
     error_message = "workspace_permission must be either USER or ADMIN."
   }
+}
+
+variable "workspace_permission_overrides" {
+  type        = map(string)
+  description = "Optional per-workspace role overrides, keyed by workspace ID (as a string). Values must be USER or ADMIN. Workspaces not present here use workspace_permission."
+  default     = {}
+
+  validation {
+    condition = alltrue([
+      for r in values(var.workspace_permission_overrides) : contains(["USER", "ADMIN"], r)
+    ])
+    error_message = "Every workspace_permission_overrides value must be either USER or ADMIN."
+  }
+}
+
+variable "create_databricks_service_principal" {
+  type        = bool
+  description = "If true, register the Entra application as a Databricks account-level service principal instead of looking up a pre-existing one. Requires only the account-level provider credentials already used by this module (no azuread provider). The Entra application itself must already exist."
+  default     = false
+}
+
+variable "display_name" {
+  type        = string
+  description = "Optional human-readable display name for the service principal. Used only when create_databricks_service_principal is true; the lookup path matches the SP by application_id."
+  default     = null
 }
