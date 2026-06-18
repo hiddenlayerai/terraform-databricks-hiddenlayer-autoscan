@@ -45,6 +45,6 @@ variable "create_databricks_service_principal" {
 
 variable "display_name" {
   type        = string
-  description = "Optional human-readable display name for the service principal. Used only when create_databricks_service_principal is true; the lookup path matches the SP by application_id."
-  default     = null
+  description = "Display name for the service principal. Used only when create_databricks_service_principal is true; the lookup path matches the SP by application_id. Defaults to 'HiddenLayer Autoscan'."
+  default     = "HiddenLayer Autoscan"
 }

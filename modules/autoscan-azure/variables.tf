@@ -20,8 +20,8 @@ variable "create_databricks_service_principal" {
 
 variable "display_name" {
   type        = string
-  description = "Optional display name applied when create_databricks_service_principal is true."
-  default     = null
+  description = "Display name for the service principal. Used only when create_databricks_service_principal is true. Defaults to 'HiddenLayer Autoscan'."
+  default     = "HiddenLayer Autoscan"
 }
 
 variable "workspace_permission" {

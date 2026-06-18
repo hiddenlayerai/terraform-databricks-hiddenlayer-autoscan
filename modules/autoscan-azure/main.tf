@@ -34,9 +34,16 @@ module "autoscan" {
     databricks = databricks.workspace
   }
 
-  cluster_id                               = var.cluster_id
-  schemas                                  = var.schemas
-  run_as_service_principal_application_id  = module.identity.application_id
+  # var.application_id is a concrete value at plan time (consumer-provided),
+  # so local.has_run_as in the root module resolves to true immediately and
+  # count=1 for the permissions/grant resources on the very first apply.
+  # depends_on enforces that the SP is created and workspace-assigned before
+  # any autoscan resource is touched.
+  run_as_service_principal_application_id = var.application_id
+  depends_on                              = [module.identity]
+
+  cluster_id = var.cluster_id
+  schemas    = var.schemas
   hiddenlayer                              = var.hiddenlayer
   hiddenlayer_client_id                    = var.hiddenlayer_client_id
   hiddenlayer_client_secret                = var.hiddenlayer_client_secret

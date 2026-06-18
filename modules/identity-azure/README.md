@@ -54,7 +54,7 @@ module "hl_identity" {
   }
 
   application_id           = "00000000-0000-0000-0000-000000000000"
-  databricks_workspace_ids = [123456789012345]  # add more IDs for multi-workspace
+  databricks_workspace_ids = ["123456789012345"]  # add more IDs for multi-workspace
 
   # Optional: register the Databricks account-level SP instead of looking it up.
   # create_databricks_service_principal = true
@@ -67,6 +67,15 @@ module "hiddenlayer" {
   source = "path/to/terraform-databricks-hiddenlayer-autoscan"
 
   run_as_service_principal_application_id = module.hl_identity.application_id
+
+  # depends_on is required when using this module alongside identity-azure.
+  #
+  # The application_id output is a pass-through of var.application_id (always
+  # known at plan time), which allows the root module to correctly plan the
+  # permissions and grant resources on the first apply. However, without
+  # depends_on, Terraform may attempt to create autoscan resources before the
+  # SP has been assigned to the workspace, causing run_as errors.
+  depends_on = [module.hl_identity]
 
   cluster_id  = var.cluster_id
   schemas     = var.schemas
@@ -99,8 +108,36 @@ databricks permissions set service-principals <internal-sp-id> \
   --json '{"access_control_list": [{"group_name": "admins", "permission_level": "CAN_USE"}]}'
 ```
 
-The `<internal-sp-id>` is the numeric Databricks principal ID (the
-`service_principal_id` output of this module, not the Entra `application_id`).
+The `<internal-sp-id>` is the numeric Databricks principal ID exposed by this
+module's `service_principal_id` output — not the Entra `application_id`. The
+easiest way to retrieve it is to re-export it as a root-level output in your
+consumer config:
+
+```hcl
+output "run_as_sp_id" {
+  value = module.hl_identity.service_principal_id
+  # or, if using the autoscan-azure wrapper:
+  # value = module.hl.service_principal_id
+}
+```
+
+Then after `terraform apply`:
+
+```bash
+terraform output run_as_sp_id
+```
+
+Alternatively, read it directly from state without adding an output:
+
+```bash
+terraform show -json | jq '
+  .values.root_module.child_modules[]
+  | select(.address == "module.hl_identity")
+  | .resources[]
+  | select(.type == "databricks_service_principal")
+  | .values.id
+'
+```
 
 ## Inputs
 
@@ -111,7 +148,7 @@ The `<internal-sp-id>` is the numeric Databricks principal ID (the
 | `workspace_permission` | `string` | no | `"USER"` | Default workspace-level role (`USER` or `ADMIN`) for workspaces not listed in `workspace_permission_overrides`. |
 | `workspace_permission_overrides` | `map(string)` | no | `{}` | Per-workspace role overrides, keyed by workspace ID as a string. Values must be `USER` or `ADMIN`. |
 | `create_databricks_service_principal` | `bool` | no | `false` | If `true`, register the Entra application as a Databricks account-level SP instead of looking up a pre-existing one. The Entra application must still already exist; no `azuread` provider is used. |
-| `display_name` | `string` | no | `null` | Display name applied when `create_databricks_service_principal` is `true`; not used for lookup. |
+| `display_name` | `string` | no | `"HiddenLayer Autoscan"` | Display name applied when `create_databricks_service_principal` is `true`; not used for lookup. |
 
 ## Outputs
 
