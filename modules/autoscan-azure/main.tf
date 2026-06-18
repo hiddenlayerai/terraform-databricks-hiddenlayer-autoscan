@@ -42,19 +42,19 @@ module "autoscan" {
   run_as_service_principal_application_id = var.application_id
   depends_on                              = [module.identity]
 
-  cluster_id = var.cluster_id
-  schemas    = var.schemas
-  hiddenlayer                              = var.hiddenlayer
-  hiddenlayer_client_id                    = var.hiddenlayer_client_id
-  hiddenlayer_client_secret                = var.hiddenlayer_client_secret
-  job_name                                 = var.job_name
-  quartz_cron                              = var.quartz_cron
-  timezone_id                              = var.timezone_id
-  pause_status                             = var.pause_status
-  max_active_scan_jobs                     = var.max_active_scan_jobs
-  manage_permissions                       = var.manage_permissions
-  manage_uc_grants                         = var.manage_uc_grants
-  cluster_permission_level                 = var.cluster_permission_level
-  workspace_base_directory                 = var.workspace_base_directory
-  notebook_version                         = var.notebook_version
+  cluster_id                = var.cluster_id
+  schemas                   = var.schemas
+  hiddenlayer               = var.hiddenlayer
+  hiddenlayer_client_id     = var.hiddenlayer_client_id
+  hiddenlayer_client_secret = var.hiddenlayer_client_secret
+  job_name                  = var.job_name
+  quartz_cron               = var.quartz_cron
+  timezone_id               = var.timezone_id
+  pause_status              = var.pause_status
+  max_active_scan_jobs      = var.max_active_scan_jobs
+  manage_permissions        = var.manage_permissions
+  manage_uc_grants          = var.manage_uc_grants
+  cluster_permission_level  = var.cluster_permission_level
+  workspace_base_directory  = var.workspace_base_directory
+  notebook_version          = var.notebook_version
 }
