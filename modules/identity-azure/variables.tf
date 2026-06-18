@@ -4,7 +4,7 @@ variable "application_id" {
 }
 
 variable "databricks_workspace_ids" {
-  type        = set(number)
+  type        = set(string)
   description = "Set of numeric Databricks workspace IDs to assign the service principal to. Accepts one or more workspace IDs, enabling a single module call to cover all workspaces."
 
   validation {
