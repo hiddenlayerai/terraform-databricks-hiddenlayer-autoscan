@@ -9,7 +9,7 @@ terraform {
 }
 
 # Auth is resolved by the provider's standard chain (env vars, ~/.databrickscfg
-# profile, Azure CLI, OIDC, etc.). Only the host is set explicitly here.
+# profile, cloud CLI on AWS/Azure/GCP, OIDC, etc.). Only the host is set here.
 provider "databricks" {
   host = var.databricks_host
 }

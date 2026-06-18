@@ -1,6 +1,6 @@
 variable "databricks_host" {
   type        = string
-  description = "Workspace URL, e.g. https://adb-1234567890123456.7.azuredatabricks.net"
+  description = "Databricks workspace URL. AWS: https://dbc-xxxx.cloud.databricks.com, Azure: https://adb-xxxx.N.azuredatabricks.net, GCP: https://xxxx.N.gcp.databricks.com"
 }
 
 variable "cluster_id" {
