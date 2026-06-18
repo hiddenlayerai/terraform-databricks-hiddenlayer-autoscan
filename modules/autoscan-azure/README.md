@@ -124,7 +124,7 @@ workspace, each with its own state and tfvars file.
 | `schemas` | `list(object)` | yes | — | `catalog`/`schema` pairs to monitor. |
 | `create_databricks_service_principal` | `bool` | no | `false` | Register the SP in the Databricks account (set `true` once per SP). |
 | `display_name` | `string` | no | `null` | Display name when creating the SP. |
-| `workspace_permission` | `string` | no | `"USER"` | Workspace role for the SP (`USER` or `ADMIN`). |
+| `workspace_permission` | `string` | no | `"ADMIN"` | Workspace role for the SP (`USER` or `ADMIN`). `ADMIN` is required for the SP to read MLflow training-run artifacts owned by other workspace users — see [MLflow experiment permissions](#mlflow-experiment-permissions) below. |
 | `hiddenlayer` | `object` | no | `{}` | HiddenLayer endpoint URLs. |
 | `hiddenlayer_client_id` | `string` | no | `null` | HiddenLayer API client ID (SaaS only). |
 | `hiddenlayer_client_secret` | `string` | no | `null` | HiddenLayer API client secret (SaaS only). |
@@ -143,3 +143,15 @@ workspace, each with its own state and tfvars file.
 | `workspace_directory` | Workspace path where notebooks were uploaded. |
 | `application_id` | Entra ID application ID of the run-as SP. |
 | `service_principal_id` | Internal Databricks principal ID of the run-as SP. |
+
+## MLflow experiment permissions
+
+When a `run_as` SP is set, scan jobs run as that SP rather than as the
+workspace-admin job owner. The SP needs to read the MLflow training run whose
+artifacts it is scanning. Training runs live in experiments owned by the model's
+author, not by the SP.
+
+The default `workspace_permission = "ADMIN"` provides the necessary access. If
+you have explicitly overridden to `"USER"` and encounter this error, restore the
+default or see the [`identity-azure` README](../identity-azure#mlflow-experiment-permissions)
+for manual per-experiment remediation steps.

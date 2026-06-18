@@ -92,29 +92,10 @@ model. Without a `run_as` SP the job runs as the job owner (typically a
 workspace admin who can see all experiments); with an SP set to `USER`
 workspace permission, that implicit access is lost.
 
-**Recommended fix (Terraform only):** set `workspace_permission = "ADMIN"` so
-the SP has the same experiment visibility as a workspace admin:
-
-```hcl
-module "hl_identity" {
-  source = "./modules/identity-azure"
-  ...
-  workspace_permission = "ADMIN"
-}
-```
-
-Per-workspace override variant:
-
-```hcl
-workspace_permission_overrides = { "123456789012345" = "ADMIN" }
-```
-
-If you cannot grant admin access, the scan notebook automatically falls back to
-the model version's `source` URI when `PERMISSION_DENIED` is returned for the
-`run_id` path — this covers all standard UC-registered models. The only case
-where the fallback is unavailable is a model version that has a `run_id` but no
-`source` URI (non-standard or very old registration flows). For that edge case,
-grant `CAN_READ` on the specific experiment manually:
+The default `workspace_permission = "ADMIN"` provides the necessary access.
+If you have explicitly set `workspace_permission = "USER"` and see this error,
+either restore the default or grant `CAN_READ` on the specific experiment
+manually:
 
 **Databricks UI:** Workspace → select the experiment → Permissions → add the
 SP → `Can Read`.
@@ -187,7 +168,7 @@ terraform show -json | jq '
 |------|------|----------|---------|-------------|
 | `application_id` | `string` | yes | — | Entra ID client/application ID of the service principal. |
 | `databricks_workspace_ids` | `set(string)` | yes | — | One or more numeric Databricks workspace IDs to assign the SP to. |
-| `workspace_permission` | `string` | no | `"USER"` | Default workspace-level role (`USER` or `ADMIN`) for workspaces not listed in `workspace_permission_overrides`. |
+| `workspace_permission` | `string` | no | `"ADMIN"` | Default workspace-level role (`USER` or `ADMIN`) for workspaces not listed in `workspace_permission_overrides`. `ADMIN` is required for the run-as SP to read MLflow training-run artifacts owned by other workspace users. |
 | `workspace_permission_overrides` | `map(string)` | no | `{}` | Per-workspace role overrides, keyed by workspace ID as a string. Values must be `USER` or `ADMIN`. |
 | `create_databricks_service_principal` | `bool` | no | `false` | If `true`, register the Entra application as a Databricks account-level SP instead of looking up a pre-existing one. The Entra application must still already exist; no `azuread` provider is used. |
 | `display_name` | `string` | no | `"HiddenLayer Autoscan"` | Display name applied when `create_databricks_service_principal` is `true`; not used for lookup. |

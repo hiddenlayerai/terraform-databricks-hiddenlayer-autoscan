@@ -16,7 +16,7 @@ variable "databricks_workspace_ids" {
 variable "workspace_permission" {
   type        = string
   description = "Default workspace-level role to grant the service principal when a workspace is not listed in workspace_permission_overrides. Must be USER or ADMIN."
-  default     = "USER"
+  default     = "ADMIN"
 
   validation {
     condition     = contains(["USER", "ADMIN"], var.workspace_permission)

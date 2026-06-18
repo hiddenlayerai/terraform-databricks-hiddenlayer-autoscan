@@ -26,8 +26,8 @@ variable "display_name" {
 
 variable "workspace_permission" {
   type        = string
-  description = "Workspace-level role to assign to the service principal. Must be USER or ADMIN."
-  default     = "USER"
+  description = "Workspace-level role to assign to the service principal. Must be USER or ADMIN. Set to ADMIN if the SP needs to read MLflow experiments owned by other users (e.g. to download training-run artifacts for scanning); see the identity-azure README for details."
+  default     = "ADMIN"
 
   validation {
     condition     = contains(["USER", "ADMIN"], var.workspace_permission)
