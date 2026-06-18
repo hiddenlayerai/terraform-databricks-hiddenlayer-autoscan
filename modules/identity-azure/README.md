@@ -83,6 +83,48 @@ module "hiddenlayer" {
 }
 ```
 
+## MLflow experiment permissions
+
+The scan job downloads model artifacts using the `run_id` stored on each model
+version. That `run_id` points to the original **training run**, which lives
+inside an MLflow experiment owned by the data scientist who registered the
+model. Without a `run_as` SP the job runs as the job owner (typically a
+workspace admin who can see all experiments); with an SP set to `USER`
+workspace permission, that implicit access is lost.
+
+**Recommended fix (Terraform only):** set `workspace_permission = "ADMIN"` so
+the SP has the same experiment visibility as a workspace admin:
+
+```hcl
+module "hl_identity" {
+  source = "./modules/identity-azure"
+  ...
+  workspace_permission = "ADMIN"
+}
+```
+
+Per-workspace override variant:
+
+```hcl
+workspace_permission_overrides = { "123456789012345" = "ADMIN" }
+```
+
+If you cannot grant admin access, the scan notebook automatically falls back to
+the model version's `source` URI when `PERMISSION_DENIED` is returned for the
+`run_id` path — this covers all standard UC-registered models. The only case
+where the fallback is unavailable is a model version that has a `run_id` but no
+`source` URI (non-standard or very old registration flows). For that edge case,
+grant `CAN_READ` on the specific experiment manually:
+
+**Databricks UI:** Workspace → select the experiment → Permissions → add the
+SP → `Can Read`.
+
+**Databricks CLI:**
+```bash
+databricks permissions set experiments <experiment-id> \
+  --json '{"access_control_list": [{"service_principal_name": "<sp-app-id>", "permission_level": "CAN_READ"}]}'
+```
+
 ## `run_as` permission — manual step required
 
 The Databricks Terraform provider does not currently support setting permissions
