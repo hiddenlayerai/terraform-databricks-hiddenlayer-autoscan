@@ -1,0 +1,69 @@
+# Example GitHub Actions workflow for deploying HiddenLayer autoscan across
+# multiple Databricks workspaces using a Terraform matrix strategy.
+#
+# Copy this file to .github/workflows/hl-autoscan-deploy.yml in your
+# consumer repository and adjust the matrix and backend-config values.
+#
+# Prerequisites (GitHub repository secrets):
+#   AZURE_TENANT_ID        — Entra ID tenant ID
+#   AZURE_CLIENT_ID        — Terraform runner SP application ID
+#   AZURE_CLIENT_SECRET    — Terraform runner SP client secret
+#   HL_CLIENT_ID           — HiddenLayer API client ID (SaaS only)
+#   HL_CLIENT_SECRET       — HiddenLayer API client secret (SaaS only)
+#   TF_BACKEND_ACCESS_KEY  — Storage account access key (if using azurerm backend)
+
+name: Deploy HiddenLayer Autoscan
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy (${{ matrix.workspace }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      # Run all workspaces in parallel. Set to false to fail fast.
+      fail-fast: false
+      matrix:
+        workspace:
+          - workspace-a
+          - workspace-b
+          # Add more workspace names here; each must have a matching
+          # examples/ci-matrix/<name>.tfvars file committed to the repo.
+
+    defaults:
+      run:
+        working-directory: examples/ci-matrix
+
+    env:
+      TF_VAR_azure_tenant_id:     ${{ secrets.AZURE_TENANT_ID }}
+      TF_VAR_azure_client_id:     ${{ secrets.AZURE_CLIENT_ID }}
+      TF_VAR_azure_client_secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+      TF_VAR_hl_client_id:        ${{ secrets.HL_CLIENT_ID }}
+      TF_VAR_hl_client_secret:    ${{ secrets.HL_CLIENT_SECRET }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.5"
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="key=hl-autoscan/${{ matrix.workspace }}.tfstate" \
+            -backend-config="access_key=${{ secrets.TF_BACKEND_ACCESS_KEY }}"
+
+      - name: Terraform Plan
+        run: |
+          terraform plan \
+            -var-file="${{ matrix.workspace }}.tfvars" \
+            -out="${{ matrix.workspace }}.tfplan"
+
+      - name: Terraform Apply
+        run: |
+          terraform apply -auto-approve "${{ matrix.workspace }}.tfplan"

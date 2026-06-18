@@ -1,0 +1,14 @@
+# Copy to workspace-a.tfvars (excluded from version control via .gitignore).
+# Sensitive values (azure_client_secret, hl_client_id/secret) should be
+# injected as TF_VAR_ environment variables in CI rather than stored here.
+
+workspace_host = "https://adb-1234567890123456.7.azuredatabricks.net"
+workspace_id   = "1234567890123456"
+cluster_id     = "1234-567890-abcde123"
+
+run_as_sp_application_id            = "11111111-2222-3333-4444-555555555555"
+create_databricks_service_principal = true   # register the SP in the Databricks account
+
+schemas = [
+  { catalog = "production_catalog", schema = "models" },
+]

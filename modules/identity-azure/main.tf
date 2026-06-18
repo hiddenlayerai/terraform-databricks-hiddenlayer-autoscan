@@ -44,8 +44,7 @@ resource "databricks_permissions" "run_as_sp" {
   count    = var.create_databricks_service_principal ? 1 : 0
   provider = databricks.workspace
 
-  authorization        = "servicePrincipal"
-  service_principal_id = databricks_service_principal.this[0].application_id
+  service_principal_id = databricks_service_principal.this[0].id
 
   access_control {
     group_name       = "admins"
