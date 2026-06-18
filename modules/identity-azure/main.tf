@@ -39,7 +39,7 @@ locals {
 resource "databricks_mws_permission_assignment" "this" {
   for_each     = var.databricks_workspace_ids
   provider     = databricks.account
-  workspace_id = each.value
+  workspace_id = tonumber(each.value)
   principal_id = local.sp_id
   permissions  = [lookup(var.workspace_permission_overrides, tostring(each.value), var.workspace_permission)]
 }

@@ -99,7 +99,7 @@ Terraform principal cannot manage UC grants and handle those out-of-band.
 ## Multi-workspace / multi-account
 
 The core module is workspace-scoped and cloud-agnostic. Pass an aliased provider
-per workspace via the `providers` meta-argument (see the multi-workspace example).
+per workspace via the `providers` meta-argument (see the examples below).
 
 ### Run-as identity by cloud
 
@@ -112,58 +112,86 @@ assignment) with the Databricks Terraform provider directly
 (`databricks_service_principal` + `databricks_mws_permission_assignment`), the
 account console, or the CLI, then pass its `application_id` to the root module.
 There is no cloud identity provider to federate; the SP is Databricks-managed.
-- **Azure** — optionally use the `[modules/identity-azure](./modules/identity-azure)`
-submodule below, which adds first-class handling for Entra ID-backed SPs.
+- **Azure** — use one of the two Azure submodules described below.
 
-The optional `[modules/identity-azure](./modules/identity-azure)` submodule handles
-the cloud-specific part for Azure: given an Entra ID-backed service principal it
-wires that SP into one or more workspaces via a single module call, then outputs
-the `application_id` for the root module's
-`run_as_service_principal_application_id`. Use it when you want Terraform to own
-the identity wiring; skip it and pass `application_id` directly if that is managed
-elsewhere. There is no AWS/GCP equivalent submodule because those SPs are
-Databricks-managed and need no separate cloud-identity step.
+### Azure submodules
 
-### Creating vs. looking up the service principal
+#### `modules/autoscan-azure` — recommended for Azure (one module call per workspace)
 
-The submodule deals with two distinct identity layers:
+The [`modules/autoscan-azure`](./modules/autoscan-azure) wrapper combines
+identity wiring and autoscan deployment into a single module call per workspace.
+It requires two Databricks provider aliases — `databricks.account` (shared) and
+`databricks.workspace` (one per workspace):
+
+```hcl
+module "hl_workspace_a" {
+  source = "git@github.com:hiddenlayerai/terraform-databricks-hiddenlayer-autoscan.git//modules/autoscan-azure?ref=main"
+
+  providers = {
+    databricks.account   = databricks.account
+    databricks.workspace = databricks.workspace_a
+  }
+
+  application_id                      = var.run_as_sp_application_id
+  workspace_id                        = "1234567890123456"
+  create_databricks_service_principal = true   # set true once; false for all other workspaces
+
+  cluster_id                = var.cluster_id
+  schemas                   = var.schemas
+  hiddenlayer_client_id     = var.hl_client_id
+  hiddenlayer_client_secret = var.hl_client_secret
+}
+```
+
+See [`modules/autoscan-azure/README.md`](./modules/autoscan-azure/README.md) for
+the full input/output reference.
+
+#### `modules/identity-azure` — lower-level Azure identity wiring
+
+The [`modules/identity-azure`](./modules/identity-azure) submodule handles only
+the identity layer: given an Entra ID-backed service principal it wires that SP
+into one or more workspaces via a single module call, then outputs the
+`application_id` for the root module's `run_as_service_principal_application_id`.
+Use it directly when you need to separate identity management from deployment, or
+when you are using the root module without the `autoscan-azure` wrapper.
+
+### Creating vs. looking up the service principal (Azure)
+
+The Azure submodules deal with two distinct identity layers:
 
 1. **Entra (Azure AD) application** — the underlying identity in Microsoft Entra
-ID. The submodule **never** creates this; it must already exist, and no `azuread`
-provider is involved.
+ID. Neither submodule **ever** creates this; it must already exist, and no
+`azuread` provider is involved.
 2. **Databricks account-level service principal** — the Databricks-side record
-that references the Entra application by `application_id`. The submodule can
-either **look this up** (default) or **create it** for you.
+that references the Entra application by `application_id`. Set
+`create_databricks_service_principal = true` to register it, or leave the default
+(`false`) to look up a pre-existing SP (registered via the account console, CLI,
+or another Terraform config).
 
-Set `create_databricks_service_principal = true` to have the submodule register
-the Entra application as a Databricks account-level service principal, using only
-the account-level Databricks credentials it already requires. Leave it at the
-default (`false`) to look up a pre-existing Databricks SP by `application_id`
-(registered out-of-band via the account console, CLI, or another Terraform
-config). Either way the submodule then assigns the SP to the target workspaces
-with `databricks_mws_permission_assignment`.
+When deploying to multiple workspaces, only **one** module should have
+`create_databricks_service_principal = true` — this registers the SP in the
+Databricks account once. All other workspace modules should use the default
+`false` to look up the already-registered SP.
 
-### Special case: Entra-managed Databricks service principals
+The Entra **application ID** (a GUID) is the value used everywhere for Azure SPs
+— it is the `application_id` input to the submodule, the `application_id` it
+outputs, and what the root module expects in
+`run_as_service_principal_application_id`.
 
-When the run-as identity is an **Entra ID-backed (Azure-managed) service
-principal**, the value you pass everywhere is the Entra **application ID** (a
-GUID), *not* the internal Databricks numeric principal ID. This is the
-`application_id` input to the submodule, the `application_id` it outputs, and the
-value the root module expects in `run_as_service_principal_application_id`.
+### Deploying to many workspaces
 
-Two consequences to keep in mind:
+| Workspace count | Recommended pattern |
+|---|---|
+| 1 | [`examples/single-workspace`](./examples/single-workspace) |
+| 2–5 | [`examples/multi-workspace`](./examples/multi-workspace) — one module block per workspace |
+| 5+ | [`examples/ci-matrix`](./examples/ci-matrix) — one Terraform apply per workspace via a CI matrix job |
 
-- Even when `create_databricks_service_principal = true`, the **Entra application
-must already exist** — Terraform only mirrors it into Databricks at the account
-level; it does not create the Azure identity.
-- The submodule exposes the internal Databricks principal ID separately as the
-`service_principal_id` output (distinct from `application_id`). Use
-`application_id` for the root module's `run_as` wiring and reserve
-`service_principal_id` for other account-level resources that key on the internal
-ID.
-
-See `[modules/identity-azure/README.md](./modules/identity-azure)` for the full
-input/output reference and provider-alias requirements.
+The CI matrix pattern in [`examples/ci-matrix`](./examples/ci-matrix) uses a
+single parameterized Terraform root driven by per-workspace `.tfvars` files. A
+GitHub Actions matrix runs `terraform apply -var-file=<workspace>.tfvars` for
+each workspace in parallel, each with its own isolated Terraform state. This
+avoids unbounded growth of provider/module blocks in a single root config and
+gives each workspace an independent blast radius.
 
 ## Notebook source of truth
 

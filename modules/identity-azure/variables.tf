@@ -4,7 +4,7 @@ variable "application_id" {
 }
 
 variable "databricks_workspace_ids" {
-  type        = set(number)
+  type        = set(string)
   description = "Set of numeric Databricks workspace IDs to assign the service principal to. Accepts one or more workspace IDs, enabling a single module call to cover all workspaces."
 
   validation {
@@ -16,7 +16,7 @@ variable "databricks_workspace_ids" {
 variable "workspace_permission" {
   type        = string
   description = "Default workspace-level role to grant the service principal when a workspace is not listed in workspace_permission_overrides. Must be USER or ADMIN."
-  default     = "USER"
+  default     = "ADMIN"
 
   validation {
     condition     = contains(["USER", "ADMIN"], var.workspace_permission)
@@ -45,6 +45,6 @@ variable "create_databricks_service_principal" {
 
 variable "display_name" {
   type        = string
-  description = "Optional human-readable display name for the service principal. Used only when create_databricks_service_principal is true; the lookup path matches the SP by application_id."
-  default     = null
+  description = "Display name for the service principal. Used only when create_databricks_service_principal is true; the lookup path matches the SP by application_id. Defaults to 'HiddenLayer Autoscan'."
+  default     = "HiddenLayer Autoscan"
 }

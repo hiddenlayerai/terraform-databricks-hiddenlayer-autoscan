@@ -1,0 +1,13 @@
+# Copy to workspace-b.tfvars (excluded from version control via .gitignore).
+
+workspace_host = "https://adb-9876543210987654.3.azuredatabricks.net"
+workspace_id   = "9876543210987654"
+cluster_id     = "9876-543210-fghij456"
+
+run_as_sp_application_id = "11111111-2222-3333-4444-555555555555"
+# create_databricks_service_principal defaults to false — SP already registered by workspace-a
+
+schemas = [
+  { catalog = "research_catalog", schema = "experiments" },
+  { catalog = "research_catalog", schema = "staging" },
+]
