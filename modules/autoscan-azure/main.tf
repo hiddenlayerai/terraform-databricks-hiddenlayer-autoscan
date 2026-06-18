@@ -17,8 +17,7 @@ module "identity" {
   source = "../identity-azure"
 
   providers = {
-    databricks.account   = databricks.account
-    databricks.workspace = databricks.workspace
+    databricks.account = databricks.account
   }
 
   application_id                      = var.application_id

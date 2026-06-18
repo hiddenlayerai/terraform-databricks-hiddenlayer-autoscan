@@ -74,12 +74,40 @@ module "hiddenlayer" {
 }
 ```
 
+## `run_as` permission — manual step required
+
+The Databricks Terraform provider does not currently support setting permissions
+on service principals (`/api/2.0/permissions/servicePrincipals/{id}`) via the
+`databricks_permissions` resource. As a result, Terraform cannot automatically
+grant the `admins` group `CAN_USE` on the newly-created SP.
+
+If `terraform apply` fails with:
+
+```
+'<app-id>' cannot be set as run_as service principal, because it doesn't exist.
+```
+
+Grant `CAN_USE` to the workspace `admins` group manually **after** the SP is
+assigned to the workspace, then re-run `apply`:
+
+**Databricks UI:** Workspace → Admin settings → Service Principals → select the
+SP → Permissions → add `admins` → `Can Use`.
+
+**Databricks CLI:**
+```bash
+databricks permissions set service-principals <internal-sp-id> \
+  --json '{"access_control_list": [{"group_name": "admins", "permission_level": "CAN_USE"}]}'
+```
+
+The `<internal-sp-id>` is the numeric Databricks principal ID (the
+`service_principal_id` output of this module, not the Entra `application_id`).
+
 ## Inputs
 
 | Name | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
 | `application_id` | `string` | yes | — | Entra ID client/application ID of the service principal. |
-| `databricks_workspace_ids` | `set(number)` | yes | — | One or more numeric Databricks workspace IDs to assign the SP to. |
+| `databricks_workspace_ids` | `set(string)` | yes | — | One or more numeric Databricks workspace IDs to assign the SP to. |
 | `workspace_permission` | `string` | no | `"USER"` | Default workspace-level role (`USER` or `ADMIN`) for workspaces not listed in `workspace_permission_overrides`. |
 | `workspace_permission_overrides` | `map(string)` | no | `{}` | Per-workspace role overrides, keyed by workspace ID as a string. Values must be `USER` or `ADMIN`. |
 | `create_databricks_service_principal` | `bool` | no | `false` | If `true`, register the Entra application as a Databricks account-level SP instead of looking up a pre-existing one. The Entra application must still already exist; no `azuread` provider is used. |
@@ -93,8 +121,6 @@ module "hiddenlayer" {
 | `service_principal_id` | Internal Databricks principal ID (distinct from `application_id`). |
 
 ## Provider aliases
-
-This submodule declares two `databricks` provider aliases:
 
 | Alias | Used for |
 |-------|----------|

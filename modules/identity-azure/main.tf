@@ -36,22 +36,6 @@ locals {
 # for_each over the workspace ID set means one module call covers all workspaces.
 # If the SP was already assigned to a workspace out-of-band, Terraform will
 # adopt the existing assignment idempotently on the first apply.
-# Grant workspace admins CAN_USE on the newly-created SP so any admin
-# (including the Terraform caller) can set it as a job run_as identity.
-# Only needed when this module creates the SP; out-of-band SPs are assumed
-# to already have their permissions managed externally.
-resource "databricks_permissions" "run_as_sp" {
-  count    = var.create_databricks_service_principal ? 1 : 0
-  provider = databricks.workspace
-
-  service_principal_id = databricks_service_principal.this[0].id
-
-  access_control {
-    group_name       = "admins"
-    permission_level = "CAN_USE"
-  }
-}
-
 resource "databricks_mws_permission_assignment" "this" {
   for_each     = var.databricks_workspace_ids
   provider     = databricks.account
